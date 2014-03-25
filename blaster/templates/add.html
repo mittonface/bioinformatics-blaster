@@ -1,0 +1,23 @@
+<html>
+  <head>
+    <title>Add New Job</title>
+  </head>
+
+  <body>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <p>
+        <label for="id_name">Job Name</label>
+        {{ form.name }}
+        {{ form.name.errors }}
+      </p>
+      <p>
+        <label for="id_file">ABI/FASTA File</label>
+        {{ form.file }}
+        {{ form.file.errors }}
+      </p>
+
+      <input type="submit" value="Submit"/>
+    </form>
+  </body>
+</html>
