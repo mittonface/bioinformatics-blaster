@@ -1,4 +1,5 @@
 from django.db import models
+from django.conf import settings
 import urllib2
 import base64
 
@@ -7,6 +8,9 @@ STATUS_CHOICES = (
     ("R", "Running"),
     ("F", "Failed"),
 )
+
+TAVERNA_USER = getattr(settings, "TAVERNA_USER", None)
+TAVERNA_PASS = getattr(settings, "TAVERNA_PASS", None)
 
 class Job(models.Model):
     name = models.CharField(max_length=50)
@@ -46,6 +50,7 @@ class TavernaWorkflow(models.Model):
     uuid = models.CharField(max_length=100, blank=True, null=True, default="Unrun Workflow")
     inputs = models.ManyToManyField("Input")
     outputs = models.CharField(max_length=300, blank=True, null=True)
+    status = models.CharField(max_length=100, blank=True, null=True) # TODO: Make a choice field
 
     def add_input(self, name, val):
         i = Input(name=name, value=val)
@@ -53,13 +58,14 @@ class TavernaWorkflow(models.Model):
 
         self.inputs.add(i)
 
-    def run_workflow(self):
+    def create_workflow(self):
         # TODO
         # move URL definition to settings file
-        url = "http://107.170.42.52:8080/taverna/rest/runs"
-        
+        url = "http://107.170.42.52:8080/taverna/rest/runs/"
         content_type = "application/vnd.taverna.t2flow+xml"
-        b64 = base64.encodestring("%s:%s" % ("taverna", "taverna"))
+
+
+        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
 
         headers = {
             "Content-Type" : content_type,
@@ -70,7 +76,16 @@ class TavernaWorkflow(models.Model):
 
 
         response = urllib2.urlopen(req)
-        print response
+        
+        try:
+            uuid = response.info().getheader("Location")[len(url):]
+            self.status = "Created"
+            self.save()
+            return uuid
+        except:
+            self.status = "Failed"
+            self.save()
+            return None
 
     def __unicode__(self):
         return self.uuid

@@ -4,7 +4,7 @@ from django.core.context_processors import csrf
 from django.template.loader import get_template
 from django.template import RequestContext
 
-from models import Job, Result, ABIFile, FASTAFile
+from models import Job, Result, ABIFile, FASTAFile, TavernaWorkflow
 from forms import JobForm
 
 def add_job(request):
@@ -21,7 +21,7 @@ def add_job(request):
 
             # create the initial sequence object
             sequence_object = create_sequence_object(path, job)
-            
+
             if sequence_object is None:
                 return HttpResponse("Bad Upload")
             else:
@@ -35,6 +35,13 @@ def add_job(request):
     })
 
     c.update(csrf(request))
+
+
+
+
+    t2 = TavernaWorkflow.objects.get(pk=1)
+    t2.create_workflow()
+
     return HttpResponse(t.render(c))
 
 
