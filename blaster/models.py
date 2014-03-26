@@ -1,4 +1,6 @@
 from django.db import models
+import urllib2
+import base64
 
 STATUS_CHOICES = (
     ("C", "Complete"),
@@ -37,3 +39,45 @@ class Result(models.Model):
                                            # with before i expand on this
 
 
+# This probably doesnt need to be a django model, but I think it's helpful to
+# me if I can manage them here
+class TavernaWorkflow(models.Model):
+    t2flow = models.TextField()
+    uuid = models.CharField(max_length=100, blank=True, null=True, default="Unrun Workflow")
+    inputs = models.ManyToManyField("Input")
+    outputs = models.CharField(max_length=300, blank=True, null=True)
+
+    def add_input(self, name, val):
+        i = Input(name=name, value=val)
+        i.save()
+
+        self.inputs.add(i)
+
+    def run_workflow(self):
+        # TODO
+        # move URL definition to settings file
+        url = "http://107.170.42.52:8080/taverna/rest/runs"
+        
+        content_type = "application/vnd.taverna.t2flow+xml"
+        b64 = base64.encodestring("%s:%s" % ("taverna", "taverna"))
+
+        headers = {
+            "Content-Type" : content_type,
+            "Authorization": "Basic %s" % (b64),
+        }
+
+        req = urllib2.Request(url, self.t2flow, headers)
+
+
+        response = urllib2.urlopen(req)
+        print response
+
+    def __unicode__(self):
+        return self.uuid
+
+class Input(models.Model):
+    name = models.CharField(max_length=50)
+    value = models.TextField()
+
+    def __unicode__(self):
+        return self.name
