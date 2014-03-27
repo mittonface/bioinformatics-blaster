@@ -116,6 +116,24 @@ class TavernaWorkflow(models.Model):
             # Error Handling
 
 
+    # starts the workflow running
+    def start(self):
+        url = "/taverna/rest/runs/%s/status" % (self.uuid)
+        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
+
+        headers = {
+            "Content-Type": "text/plain",
+            "Authorization": "Basic %s" % (b64),
+        }
+
+        conn = httplib.HTTPConnection("107.170.42.52:8080")
+        conn.request('PUT', url, "Operating", headers)
+
+        response = conn.getresponse()
+
+        print "107.170.42.52:8080%s" %(url)
+        self.status = "Operating"
+        self.save()
 
     def __unicode__(self):
         return self.uuid
