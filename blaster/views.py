@@ -42,7 +42,6 @@ def add_job(request):
     t2 = TavernaWorkflow.objects.get(pk=1)
     t2.uuid = t2.create_workflow()
     t2.save()
-    t2.send_inputs()
     t2.start()
 
     return HttpResponse(t.render(c))

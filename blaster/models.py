@@ -53,11 +53,47 @@ class TavernaWorkflow(models.Model):
     outputs = models.CharField(max_length=300, blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True) # TODO: Make a choice field
 
+
+    # I want these to related to an object on my taverna server. that means
+    # on creation, I want to create a t2flow flow on the taverna server.
+    def save(self, *args, **kwargs):
+
+        # workflow creation
+        if not self.pk:
+            self.create_workflow()
+
+        super(TavernaWorkflow, self).save(*args, **kwargs)
+
+
+    # on deletion I want to remove this workflow from the taverna server
+    def delete(self, *args, **kwargs):
+        # deletion
+
+        url = "/taverna/rest/runs/%s" % (self.uuid)
+        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
+
+        headers = {
+            "Authorization": "Basic %s" % (b64),
+        }
+
+        conn = httplib.HTTPConnection("107.170.42.52:8080")
+        conn.request('DELETE', url, "", headers)
+
+        response = conn.getresponse()
+
+        super(TavernaWorkflow, self).delete(*args, **kwargs)
+
+
+    # TODO:
+    # it might be better to do this within a manager or on the input class 
+    # I'll have to think about that a bit more. 
     def add_input(self, name, val):
         i = Input(name=name, value=val)
         i.save()
 
         self.inputs.add(i)
+        self.send_inputs() # hopefully inputs will overwrite
+
 
     # create the workflow run
     def create_workflow(self):
@@ -131,7 +167,6 @@ class TavernaWorkflow(models.Model):
 
         response = conn.getresponse()
 
-        print "107.170.42.52:8080%s" %(url)
         self.status = "Operating"
         self.save()
 
