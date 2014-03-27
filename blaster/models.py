@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import urllib2
+import httplib
 import base64
 
 STATUS_CHOICES = (
@@ -58,9 +59,11 @@ class TavernaWorkflow(models.Model):
 
         self.inputs.add(i)
 
+    # create the workflow run
     def create_workflow(self):
         # TODO
-        # move URL definition to settings file
+        # -move URL definition to settings file
+        # -I guess this should use httplib for consistency
         url = "http://107.170.42.52:8080/taverna/rest/runs/"
         content_type = "application/vnd.taverna.t2flow+xml"
 
@@ -86,6 +89,33 @@ class TavernaWorkflow(models.Model):
             self.status = "Failed"
             self.save()
             return None
+
+    # set up the inputs for the workflow run
+    def send_inputs(self):
+        for i in self.inputs.all():
+            url = "/taverna/rest/runs/%s/input/input/%s" % (self.uuid, i.name)
+
+            # hardcode this XML in for now
+            data = "<t2sr:runInput xmlns:t2sr='http://ns.taverna.org.uk/2010/xml/server/rest/'>"
+            data += "<t2sr:value>%s</t2sr>" % (i.value)
+            data += "</t2sr:runInput>"
+
+            b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
+
+            headers = {
+                "Content-Type": "application/xml",
+                "Authorization": "Basic %s" % (b64),
+            }
+
+            conn = httplib.HTTPConnection("107.170.42.52:8080")
+            conn.request('PUT', url, data, headers)
+
+            response = conn.getresponse()
+
+            # TODO
+            # Error Handling
+
+
 
     def __unicode__(self):
         return self.uuid
