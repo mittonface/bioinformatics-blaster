@@ -3,7 +3,7 @@ from django.shortcuts import HttpResponse
 from django.core.context_processors import csrf
 from django.template.loader import get_template
 from django.template import RequestContext
-
+from tasks import monitor_workflow
 from models import Job, Result, MultiFASTAFile, TavernaWorkflow, StoredWorkflows
 from forms import JobForm
 
@@ -48,6 +48,8 @@ def add_job(request):
 
                     t2.add_input("email", form.cleaned_data["email"])
 
+
+                monitor_workflow.delay(t2.id)
 
                 return HttpResponse("nice")
     else:

@@ -2,6 +2,7 @@ from django.db import models
 from django.conf import settings
 import urllib2
 import httplib
+import requests   # I wish I could figure it out with one library
 import base64
 
 # I'd like to turn this into a complete taverna wrapper at some point.
@@ -151,20 +152,10 @@ class TavernaWorkflow(models.Model):
 
     # starts the workflow running
     def start(self):
-        url = "/taverna/rest/runs/%s/status" % (self.uuid)
-        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS))
+        url = "http://107.170.42.52:8080/taverna/rest/runs/%s/status" % (self.uuid)
 
-        headers = {
-            "Content-Type": "text/plain",
-            "Authorization": "Basic %s" % (b64),
-        }
+        r = requests.put(url, "Operating", auth=(TAVERNA_USER, TAVERNA_PASS))
 
-        conn = httplib.HTTPConnection("107.170.42.52:8080")
-        conn.request('PUT', url, "Operating", headers)
-
-        response = conn.getresponse()
-
-        self.status = "Operating"
         self.save()
 
     def __unicode__(self):
