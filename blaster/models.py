@@ -4,6 +4,9 @@ import urllib2
 import httplib
 import base64
 
+# I'd like to turn this into a complete taverna wrapper at some point.
+# for now it's just going to serve the purpose of getting my assignment
+# done
 STATUS_CHOICES = (
     ("C", "Complete"),
     ("R", "Running"),
@@ -21,25 +24,19 @@ class Job(models.Model):
                               default = "R")
 
 
-# An ABI file that may have been uploaded.
-# We should be able to parse some information out of it, but for now I'll
-# just store the file.
-class ABIFile(models.Model):
-    path = models.CharField(max_length=300)
-    job = models.ForeignKey(Job)
+
 
 # FASTA files may come from ABI files or be uploaded directly. In the first 
 # case we will want to create a link to the parent ABI File. FASTA files will
 # be the primary type of object we're operating on. So results will link back
 # to fastas
-class FASTAFile(models.Model):
+class MultiFASTAFile(models.Model):
     path = models.CharField(max_length=300)
-    ABIFile = models.ForeignKey(ABIFile, blank=True, null=True)
     job = models.ForeignKey(Job)
 
 
 class Result(models.Model):
-    fasta = models.ForeignKey(FASTAFile)
+    fasta = models.ForeignKey(MultiFASTAFile)
     text = models.CharField(max_length=50) # I want to see what I'm working
                                            # with before i expand on this
 
@@ -49,9 +46,10 @@ class Result(models.Model):
 class TavernaWorkflow(models.Model):
     t2flow = models.TextField()
     uuid = models.CharField(max_length=100, blank=True, null=True, default="Unrun Workflow")
-    inputs = models.ManyToManyField("Input")
+    inputs = models.ManyToManyField("Input", blank=True, null=True)
     outputs = models.CharField(max_length=300, blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True) # TODO: Make a choice field
+    job = models.ForeignKey(Job)
 
 
     # I want these to related to an object on my taverna server. that means
@@ -60,7 +58,7 @@ class TavernaWorkflow(models.Model):
 
         # workflow creation
         if not self.pk:
-            self.create_workflow()
+            self.uuid = self.create_workflow()
 
         super(TavernaWorkflow, self).save(*args, **kwargs)
 
@@ -92,7 +90,7 @@ class TavernaWorkflow(models.Model):
         i.save()
 
         self.inputs.add(i)
-        self.send_inputs() # hopefully inputs will overwrite
+        self.send_inputs()  # hopefully inputs will overwrite
 
 
     # create the workflow run
@@ -119,12 +117,11 @@ class TavernaWorkflow(models.Model):
         try:
             uuid = response.info().getheader("Location")[len(url):]
             self.status = "Created"
-            self.save()
             return uuid
         except:
             self.status = "Failed"
-            self.save()
             return None
+
 
     # set up the inputs for the workflow run
     def send_inputs(self):
@@ -133,7 +130,7 @@ class TavernaWorkflow(models.Model):
 
             # hardcode this XML in for now
             data = "<t2sr:runInput xmlns:t2sr='http://ns.taverna.org.uk/2010/xml/server/rest/'>"
-            data += "<t2sr:value>%s</t2sr>" % (i.value)
+            data += "<t2sr:value>%s</t2sr:value>" % (i.value)
             data += "</t2sr:runInput>"
 
             b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
@@ -155,7 +152,7 @@ class TavernaWorkflow(models.Model):
     # starts the workflow running
     def start(self):
         url = "/taverna/rest/runs/%s/status" % (self.uuid)
-        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
+        b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS))
 
         headers = {
             "Content-Type": "text/plain",
@@ -179,3 +176,9 @@ class Input(models.Model):
 
     def __unicode__(self):
         return self.name
+
+# TODO:
+# Make this more sophisticated. It could, for example, store information about
+# expected inputs and outputs.
+class StoredWorkflows(models.Model):
+    t2flow = models.TextField()
