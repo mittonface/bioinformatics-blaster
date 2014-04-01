@@ -42,13 +42,12 @@ def add_job(request):
                 # need to pass it some inputs now.
 
                 with open(path, "r") as sequence_file:
-                    print "here?"
-                    t2.add_input("multiFasta",
-                                 sequence_file.read().replace("\n", ''))
-
-                    t2.add_input("email", form.cleaned_data["email"])
+                    seq = sequence_file.read()
 
 
+                t2.add_input("sequence", seq)
+
+                t2.add_input("email", form.cleaned_data["email"])
                 monitor_workflow.delay(t2.id)
 
                 return HttpResponse("nice")

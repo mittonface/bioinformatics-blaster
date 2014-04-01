@@ -25,8 +25,6 @@ class Job(models.Model):
                               default = "R")
 
 
-
-
 # FASTA files may come from ABI files or be uploaded directly. In the first 
 # case we will want to create a link to the parent ABI File. FASTA files will
 # be the primary type of object we're operating on. So results will link back
@@ -48,7 +46,6 @@ class TavernaWorkflow(models.Model):
     t2flow = models.TextField()
     uuid = models.CharField(max_length=100, blank=True, null=True, default="Unrun Workflow")
     inputs = models.ManyToManyField("Input", blank=True, null=True)
-    outputs = models.CharField(max_length=300, blank=True, null=True)
     status = models.CharField(max_length=100, blank=True, null=True) # TODO: Make a choice field
     job = models.ForeignKey(Job)
 
@@ -68,14 +65,14 @@ class TavernaWorkflow(models.Model):
     def delete(self, *args, **kwargs):
         # deletion
 
-        url = "/taverna/rest/runs/%s" % (self.uuid)
+        url = "/tavernaserverrest/runs/%s" % (self.uuid)
         b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
 
         headers = {
             "Authorization": "Basic %s" % (b64),
         }
 
-        conn = httplib.HTTPConnection("107.170.42.52:8080")
+        conn = httplib.HTTPConnection("162.243.48.240:8080")
         conn.request('DELETE', url, "", headers)
 
         response = conn.getresponse()
@@ -99,7 +96,7 @@ class TavernaWorkflow(models.Model):
         # TODO
         # -move URL definition to settings file
         # -I guess this should use httplib for consistency
-        url = "http://107.170.42.52:8080/taverna/rest/runs/"
+        url = "http://162.243.48.240:8080/tavernaserver/rest/runs/"
         content_type = "application/vnd.taverna.t2flow+xml"
 
 
@@ -127,32 +124,26 @@ class TavernaWorkflow(models.Model):
     # set up the inputs for the workflow run
     def send_inputs(self):
         for i in self.inputs.all():
-            url = "/taverna/rest/runs/%s/input/input/%s" % (self.uuid, i.name)
+            url = "http://162.243.48.240:8080/tavernaserver/rest/runs/%s/input/input/%s" % (self.uuid, i.name)
 
             # hardcode this XML in for now
             data = "<t2sr:runInput xmlns:t2sr='http://ns.taverna.org.uk/2010/xml/server/rest/'>"
             data += "<t2sr:value>%s</t2sr:value>" % (i.value)
             data += "</t2sr:runInput>"
 
-            b64 = base64.encodestring("%s:%s" % (TAVERNA_USER, TAVERNA_PASS)).replace('\n', '')
 
             headers = {
-                "Content-Type": "application/xml",
-                "Authorization": "Basic %s" % (b64),
+                "Content-Type": "application/xml"
             }
 
-            conn = httplib.HTTPConnection("107.170.42.52:8080")
-            conn.request('PUT', url, data, headers)
-
-            response = conn.getresponse()
-
+            r = requests.put(url, data, auth=(TAVERNA_USER, TAVERNA_PASS), headers=headers);
             # TODO
             # Error Handling
 
 
     # starts the workflow running
     def start(self):
-        url = "http://107.170.42.52:8080/taverna/rest/runs/%s/status" % (self.uuid)
+        url = "http://162.243.48.240:8080/tavernaserver/rest/runs/%s/status" % (self.uuid)
 
         r = requests.put(url, "Operating", auth=(TAVERNA_USER, TAVERNA_PASS))
 
@@ -168,8 +159,14 @@ class Input(models.Model):
     def __unicode__(self):
         return self.name
 
+class Output(models.Model):
+    type = models.CharField(max_length=30)
+    link = models.CharField(max_length=300)
+    workflow = models.ForeignKey(TavernaWorkflow)
+
 # TODO:
 # Make this more sophisticated. It could, for example, store information about
 # expected inputs and outputs.
 class StoredWorkflows(models.Model):
     t2flow = models.TextField()
+
