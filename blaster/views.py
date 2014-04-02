@@ -1,10 +1,12 @@
 from django.shortcuts import render
-from django.shortcuts import HttpResponse
+from django.shortcuts import HttpResponse, HttpResponseRedirect
 from django.core.context_processors import csrf
+from django.core.urlresolvers import reverse
 from django.template.loader import get_template
 from django.template import RequestContext
 from tasks import monitor_workflow
-from models import Job, Result, MultiFASTAFile, TavernaWorkflow, StoredWorkflows
+from models import Job, Result, MultiFASTAFile, TavernaWorkflow, StoredWorkflows, Output
+
 from forms import JobForm
 
 # TODO
@@ -50,7 +52,7 @@ def add_job(request):
                 t2.add_input("email", form.cleaned_data["email"])
                 monitor_workflow.delay(t2.id)
 
-                return HttpResponse("nice")
+                return HttpResponseRedirect(reverse('view_jobs'))
     else:
         form = JobForm()
 
@@ -65,10 +67,54 @@ def add_job(request):
     return HttpResponse(t.render(c))
 
 
+# this should probably be called list_job or something like that
+def view_jobs(request):
+
+    workflows = TavernaWorkflow.objects.all()
+
+    t = get_template("list.html")
+    c = RequestContext(request, {
+        "workflows": workflows,
+    })
+
+    return HttpResponse(t.render(c))
+
+
+def view_job(request, job_id):
+    job = Job.objects.get(pk=job_id)
+
+    # when extended, there could technically be more than one workflow
+    # related to file
+    workflow = TavernaWorkflow.objects.get(job=job)
+    inputs = workflow.inputs.all()
+    outputs = Output.objects.filter(workflow=workflow)
+
+
+
+    t = get_template("job_detail.html")
+    c = RequestContext(request, {
+        "job": job,
+        "workflow": workflow,
+        "inputs": inputs,
+        "outputs": outputs,
+    })
+
+    return HttpResponse(t.render(c))
+
+def delete_job(request, job_id):
+    job = Job.objects.get(pk=job_id)
+
+    # when extended, there could technically be more than one workflow
+    # related to file
+    workflow = TavernaWorkflow.objects.get(job=job)
+
+    workflow.delete()
+    job.delete()
+    return HttpResponseRedirect(reverse('view_jobs'))
 
 # Creates a job given the name, might need to beef this up a bit later
 def create_job(form):
-    j = Job(name=form.cleaned_data["name"])
+    j = Job(name=form.cleaned_data["name"], email=form.cleaned_data["email"])
     j.save()
     return j
 

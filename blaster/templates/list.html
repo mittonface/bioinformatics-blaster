@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Job List</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Blasting Tool</h1>
+
+        <p class="well"> This tool is meant to provide an interface to NCBI's various BLAST services. It allows for many BLAST's
+        to be easily run and monitored at once. It is currently limited to blasting simple Protein sequences to NCBI,
+        but is easily extensible to be used to BLASTing Nucleotide sequences, ABI files, MultiFasta files, etc. In fact,
+        at the core this is a custom made Python Wrapper for Taverna workflows. This means that it is easy to extend this
+        application to operate using any created Taverna workflows or workflows that might be found at <a href="http://myexperiment.org">MyExperiment.org</a>
+        </p>
+
+        <a href="{% url 'add_job'  %}" class="btn btn-primary">Add Job</a>
+        <br/><br/>
+        <table class="table table-striped table-bordered table-hover">
+            <thead>
+                <th>Job Name</th>
+                <th>Creator</th>
+                <th>Status</th>
+                <th></th>
+            </thead>
+            {% for w in workflows %}
+            {% if w.status == 'Complete' %}
+            <tr class="success">
+            {% elif w.status == "Failed" %}
+            <tr class="danger">
+            {% elif w.status == "Running" %}
+            <tr class="info">
+            {% else %}
+            <tr>
+            {% endif %}
+                <td>{{ w.job.name }}</td>
+                <td>{{ w.job.email }}</td>
+                <td>{{ w.status }}</td>
+                <td><a href="{% url 'view_job' w.job.id %}" class="btn btn-default">View</a>
+                <a href="{% url 'delete_job' w.job.id %}" class="btn btn-danger">Delete</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+</body>
+
+</html>

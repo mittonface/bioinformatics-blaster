@@ -23,6 +23,10 @@ class Job(models.Model):
     status = models.CharField(max_length=1,
                               choices = STATUS_CHOICES,
                               default = "R")
+    email = models.CharField(max_length=200)
+
+    def __unicode__(self):
+        return self.name
 
 
 # FASTA files may come from ABI files or be uploaded directly. In the first 

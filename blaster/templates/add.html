@@ -1,30 +1,43 @@
 <html>
   <head>
     <title>Add New Job</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
   </head>
 
   <body>
-    <form method="POST" enctype="multipart/form-data">
-      {% csrf_token %}
-      <p>
-        <label for="id_name">Job Name</label>
-        {{ form.name }}
-        {{ form.name.errors }}
-      </p>
-      <p>
-        <label for="id_file">ABI/FASTA File</label>
-        {{ form.file }}
-        {{ form.file.errors }}
-      </p>
+    <div class="container">
+        <h1>Add a New Job</h1>
+        <div class="col-sm-offset-2 col-sm-8 well">
+        <form method="POST" enctype="multipart/form-data" class="form-horizontal" role="form">
+          {% csrf_token %}
 
-      <p>
-        <label for="id_file">Email</label>
-        {{ form.email }}
-        {{ form.email.errors }}
-      </p>
+            <div class="form-group">
+                <label for="id_name" class="col-sm-2 control-label">Job Name</label>
+                <div class="col-sm-10">
+                    <input id="id_name" maxlength="300" name="name" type="text" class="form-control" placeholder="Job Name">
+                    {{ form.name.errors }}
+                </div>
+            </div>
 
+            <div class="form-group" >
+                <label for="id_file" class="col-sm-2 control-label">Sequence File</label>
+                <div class="col-sm-10">
+                    <input id="id_file" name="file" type="file" class="form-control">
+                    {{ form.file.errors }}
+                </div>
+            </div>
 
-      <input type="submit" value="Submit"/>
-    </form>
+            <div class="form-group">
+                <label for="id_file" class="col-sm-2 control-label">Email</label>
+                <div class="col-sm-10">
+                    <input id="id_email" name="email" type="email" class="form-control" placeholder="Email">
+                    {{ form.email.errors }}
+                </div>
+            </div>
+
+          <input type="submit" value="Submit" class="btn btn-default"/>
+        </form>
+    </div>
+    </div>
   </body>
 </html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>{{ job.name }}</title>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <h2>Job Info</h2>
+        <table class="table table-bordered">
+           <tr>
+               <td>
+               <b>Job Name: </b> {{ job.name }}
+               </td>
+               <td>
+               <b>Date:</b> {{ job.date }}
+               </td>
+               <td>
+               <b>Email:</b> {{ job.email }}
+               </td>
+           </tr>
+           <tr>
+           <td colspan="3">
+             <b>Workflow Inputs:</b>
+               <br>
+             {% for i in inputs %}
+               <u>{{ i.name }}</u>
+               {{ i.value }}
+               <br>
+             {% endfor %}
+           </td>
+           </tr>
+        </table>
+
+        <h2>Results</h2>
+        <table class="table table-bordered">
+            {% for o in outputs %}
+              <tr>
+                <td>
+                {{ o.type }}
+                </td>
+                <td>
+                    <a href="{{ o.link }}">{{ o.link }}</a>
+                </td>
+              </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+</body>
+</html>
